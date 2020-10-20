@@ -15,49 +15,50 @@ $ServerUrl = 'http://derp:14145' # Set to your Clone server URL
 $MachineName = 'DERP' # The machine name of the SQL Server instance to create the clones on
 $InstanceName = '' # The instance name of the SQL Server instance to create the clones on
 $ImageLocation = '\\DERP\CloneImages' # Point to the file share we want to use to store the image
-$DatabaseName = 'Northwind' # The name of the database
+$DatabaseName = 'DontTypeInADemo' # The name of the database
 $BackupFolder = '\\DERP\bak\' # The path to the database backup folder
-$BackupPath = "$BackupFolder\Northwind.bak" # The path to the database backup folder
+$DataImageName = 'NorthwindNew'  # Prepare a name for the data image, with a timestamp this would use + (Get-Date -Format "yyyyMMdd")
 
+
+# You may not need to change these
+$BackupPath = "{0}\{1}.bak" -f $BackupFolder, $DatabaseName  # The path to the database backup folder
 
 ##########################################################################################
 
-write-host 'Taking a fresh backup of Northwind.'
-
-Backup-SqlDatabase -ServerInstance "DERP" -Database "Northwind" -BackupFile "$BackupPath" -Initialize
-
-
-write-host 'Connecting to clone.'
-
+Write-Host 'Connecting to clone.'
 Connect-SqlClone -ServerUrl $ServerUrl
 
-$TemporaryServer = Get-SqlCloneSqlServerInstance -MachineName $MachineName -InstanceName $InstanceName # You can omit the instance parameter if there is only one instance
 
-if (!(Test-Path ($BackupFolder)))
-  {
-    write-host 'Backup folder not found. Exiting.'
-    break
-  }
+$Image = Get-SqlCloneImage -Name "$DataImageName" -ErrorAction:SilentlyContinue
+if ( $Image )
+{
+  Write-Host "Image $DataImageName already exists, not creating a new one"
+}
+else {
+  Write-Host "Taking a fresh backup of $DatabaseName"
 
-# Get the latest backup file for our database (striped backups would be more complex)
-$BackupFiles = Get-ChildItem -Path $BackupFolder  |
-    Where-Object -FilterScript { $_.Name.Substring(0,$DatabaseName.Length) -eq $DatabaseName}   # My backup files always start with the database name
+  Backup-SqlDatabase -ServerInstance "DERP" -Database $DatabaseName -BackupFile "$BackupPath" -Initialize
 
-# Now we have a filtered list, sort to get latest
-$BackupFile = $BackupFiles |
-    Sort-Object -Property LastWriteTime  |   
-    Select-Object -Last 1 # I only want the most recent file for this database to be used
+  $TemporaryServer = Get-SqlCloneSqlServerInstance -MachineName $MachineName -InstanceName $InstanceName # You can omit the instance parameter if there is only one instance
 
-$BackupFileName = $BackupFile.FullName
+  if (!(Test-Path ($BackupFolder)))
+    {
+      Write-Host "Backup folder not found. Exiting."
+      break
+    }
 
-#Start a timer
-$elapsed = [System.Diagnostics.Stopwatch]::StartNew()
 
-"Started at {0}, creating data image for database ""{1}"" from backup file ""{2}""" -f $(get-date) , $DatabaseName , $BackupFileName
+  #Start a timer
+  $elapsed = [System.Diagnostics.Stopwatch]::StartNew()
 
-$DataImageName = $DatabaseName + "New"  # Prepare a name for the data image, with a timestamp this would use + (Get-Date -Format "yyyyMMdd")
-$ImageDestination = Get-SqlCloneImageLocation -Path $ImageLocation
 
-New-SqlCloneImage -Name $DataImageName -SqlServerInstance $TemporaryServer -BackupFileName $BackupFileName -Destination $ImageDestination | Wait-SqlCloneOperation # Create the data image and wait for completion
 
-"Total Elapsed Time: {0}" -f $($elapsed.Elapsed.ToString())
+  $ImageDestination = Get-SqlCloneImageLocation -Path $ImageLocation
+
+  New-SqlCloneImage -Name $DataImageName -SqlServerInstance $TemporaryServer -BackupFileName $BackupPath -Destination $ImageDestination | Wait-SqlCloneOperation # Create the data image and wait for completion
+
+  Write-Host "Total Elapsed Time: $($elapsed.Elapsed.ToString())" 
+
+  Write-Host "Created image $DataImageName"
+
+}
