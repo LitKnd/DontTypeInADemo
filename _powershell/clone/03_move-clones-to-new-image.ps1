@@ -38,8 +38,12 @@ foreach ($clone in $oldClones)
 
     "Removed clone ""{0}"" from instance ""{1}"" " -f $clone.Name , $thisDestination.Server + '\' + $thisDestination.Instance;
 
-    # Recreate if the clone name isn't like "SHADOW"
-    if ($clone.Name -notcontains 'SHADOW' )
+    # Recreate if the clone name isn't like "*SHADOW"
+    if ($clone.Name -like "*SHADOW" )
+    {
+        Write-Host "Not moving as this is a shadow"
+    }
+    else
         {
             $newImage | New-SqlClone -Name $clone.Name -Location $thisDestination  | Wait-SqlCloneOperation
 

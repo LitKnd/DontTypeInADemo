@@ -21,12 +21,12 @@ Write-Host "Check: Do both images exist?"
 if ( $current -and $new)
 
 {
-    Write-Host "Take the current baseline image and rename it to "$CurrentImageNameOld""
+    Write-Host "Take the current baseline image and rename it to $CurrentImageNameOld"
     $ImageToRename = Get-SqlCloneImage -Name "$CurrentImageName"
     $NewName = "{0}Old" -f $CurrentImageName
     Rename-SqlCloneImage -Image $ImageToRename -NewName $NewName
 
-    Write-Host "Take the new image and rename it to "$CurrentImageName""
+    Write-Host "Take the new image and rename it to $CurrentImageName"
     $ImageToRename = Get-SqlCloneImage -Name "$ReplacementImageName"
     Rename-SqlCloneImage -Image $ImageToRename -NewName "$CurrentImageName"
 
