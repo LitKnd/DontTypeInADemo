@@ -208,6 +208,8 @@
     <None Include="Schema-Model\dbo\Views\Summary of Sales by Year.sql" />
     <None Include="Programmable Objects\dbo\Stored Procedures\newproc.sql" />
     <None Include="Migrations\001_veryimportantchange.sql" />
+    <None Include="Schema-Model\dbo\Tables\AllNewTable.sql" />
+    <None Include="Migrations\002_added_dbo_allnewtable.sql" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Pre-Deployment\01_Initialize_Deployment.sql" />
